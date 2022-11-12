@@ -22,20 +22,25 @@ int main(int argc, char **argv)
     {
         cout << "-d matrix dimension" << endl;
         cout << "-n number of matrices" << endl;
+        cout << "-b compute baseline speed" << endl;
         cout << "-s for seed" << endl;
         return 0;
     }
 
     int opt;
 
+    bool baseline = false;
     uint64_t seed = time(nullptr);
     uint64_t dim = 100;
     uint64_t n = 10;
 
-    while ((opt = getopt(argc, argv, "d:n:s:")) != -1)
+    while ((opt = getopt(argc, argv, "bd:n:s:")) != -1)
     {
         switch (opt)
         {
+        case 'b':
+            baseline = true;
+            break;
         case 's':
             seed = stoi(optarg);
             break;
@@ -71,12 +76,15 @@ int main(int argc, char **argv)
     double start;
     double end;
 
-    start = omp_get_wtime();
-    for (uint64_t i = 0; i < n; i++)
-        dets[i] = matrices[i].det();
-    end = omp_get_wtime();
+    if (baseline)
+    {
+        start = omp_get_wtime();
+        for (uint64_t i = 0; i < n; i++)
+            dets[i] = matrices[i].det();
+        end = omp_get_wtime();
 
-    cout << "computed determinants in " << end - start << " seconds." << endl;
+        cout << "computed determinants in " << end - start << " seconds." << endl;
+    }
 
     start = omp_get_wtime();
     for (uint64_t i = 0; i < n; i++)
