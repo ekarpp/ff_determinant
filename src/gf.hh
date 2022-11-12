@@ -77,6 +77,13 @@ namespace ff_util
             const __m256i prod = _mm256_set_m128i(
                 /* hi */
                 _mm_unpacklo_epi64(
+#ifdef VPC
+                    _mm256_clmulepi64_epi128(
+                        aa,
+                        bb,
+                        0x00
+                    )
+#else
                     _mm_clmulepi64_si128(
                         _mm256_extractf128_si256(aa, 1),
                         _mm256_extractf128_si256(bb, 1),
@@ -87,9 +94,17 @@ namespace ff_util
                         _mm256_extractf128_si256(bb, 1),
                         0x11
                     )
+#endif
                 ),
                 /* lo */
                 _mm_unpacklo_epi64(
+#ifdef VPC
+                    _mm256_clmulepi64_epi128(
+                        aa,
+                        bb,
+                        0x00
+                    )
+#else
                     _mm_clmulepi64_si128(
                         _mm256_extractf128_si256(aa, 0),
                         _mm256_extractf128_si256(bb, 0),
@@ -100,6 +115,7 @@ namespace ff_util
                         _mm256_extractf128_si256(bb, 0),
                         0x11
                     )
+#endif
                 )
             );
 
