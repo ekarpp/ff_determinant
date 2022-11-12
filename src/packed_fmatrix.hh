@@ -18,16 +18,6 @@ typedef long long int long4_t __attribute__ ((vector_size (32)));
 
 #define VECTOR_N 8
 
-#define COEFF_LOOP(index)                                               \
-    {                                                                   \
-        for (int col = 0; col < this->cols - 1; col++)                  \
-            coeffs[col] = _mm256_blend_epi32(                           \
-                _mm256_permutevar8x32_epi32(coeffs[col + 0], idx),      \
-                _mm256_permutevar8x32_epi32(coeffs[col + 1], idx),      \
-                0xFF >> index                                           \
-            );                                                          \
-    }
-
 #define DET_LOOP(index)                                         \
     {                                                           \
         int r0 = VECTOR_N*col + index;                          \
@@ -158,58 +148,35 @@ public:
                 );
             }
         }
+
+        /* cycle all one position to right */
+        const long4_t permute_idx = _mm256_set_epi32(
+            0b000,
+            0b111,
+            0b110,
+            0b101,
+            0b100,
+            0b011,
+            0b010,
+            0b001
+        );
+
+        long4_t onepos = _mm256_set_epi64x(1ull << 32, 0, 0, 0);
+        for (int i = 0; i < this->nmod; i++)
+            onepos = _mm256_permutevar8x32_epi32(
+                onepos,
+                permute_idx
+            );
+
         for (int r = matrix.get_n(); r < this->rows; r++)
         {
             for (int c = 0; c < this->cols - 1; c++)
                 this->set(r, c, _mm256_setzero_si256());
-
-            /* lazy.... */
-            switch (r % VECTOR_N)
-            {
-            case 1:
-                this->set(r, this->cols - 1, _mm256_set_epi64x(
-                              1, 0, 0, 0
-                         )
-                );
-                break;
-            case 2:
-                this->set(r, this->cols - 1, _mm256_set_epi64x(
-                              0, 1ull << 32, 0, 0
-                         )
-                );
-                break;
-            case 3:
-                this->set(r, this->cols - 1, _mm256_set_epi64x(
-                              0, 1, 0, 0
-                         )
-                );
-                break;
-            case 4:
-                this->set(r, this->cols - 1, _mm256_set_epi64x(
-                              0, 0, 1ull << 32, 0
-                         )
-                );
-                break;
-            case 5:
-                this->set(r, this->cols - 1, _mm256_set_epi64x(
-                              0, 0, 1, 0
-                         )
-                );
-                break;
-            case 6:
-                this->set(r, this->cols - 1, _mm256_set_epi64x(
-                              0, 0, 0, 1ull << 32
-                         )
-                );
-                break;
-            case 7:
-                this->set(r, this->cols - 1, _mm256_set_epi64x(
-                              0, 0, 0, 1
-                         )
-                );
-                break;
-            }
-
+            this->set(r, this->cols - 1, onepos);
+            onepos = _mm256_permutevar8x32_epi32(
+                onepos,
+                permute_idx
+            );
         }
     }
 
