@@ -6,7 +6,7 @@ LDFLAGS := -fopenmp
 
 VPATH = src:tests/unit
 
-BIN := ff-det ff-det-PAR ff-det-test
+BIN := ff-det ff-det-VPC ff-det-PAR ff-det-test ff-det-test-VPC
 
 all: $(BIN)
 

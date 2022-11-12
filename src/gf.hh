@@ -74,16 +74,26 @@ namespace ff_util
                 _mm256_srli_epi64(b, 16*(3-i)),
                 mask
             );
+#ifdef VPC
+            const __m256i prod = _mm256_or_si256(
+                _mm256_clmulepi64_epi128(
+                    aa,
+                    bb,
+                    0x00
+                ),
+                _mm256_slli_si256(
+                    _mm256_clmulepi64_epi128(
+                        aa,
+                        bb,
+                        0x11
+                    ),
+                    64 / 8
+                )
+            );
+#else
             const __m256i prod = _mm256_set_m128i(
                 /* hi */
                 _mm_unpacklo_epi64(
-#ifdef VPC
-                    _mm256_clmulepi64_epi128(
-                        aa,
-                        bb,
-                        0x00
-                    )
-#else
                     _mm_clmulepi64_si128(
                         _mm256_extractf128_si256(aa, 1),
                         _mm256_extractf128_si256(bb, 1),
@@ -94,17 +104,9 @@ namespace ff_util
                         _mm256_extractf128_si256(bb, 1),
                         0x11
                     )
-#endif
                 ),
                 /* lo */
                 _mm_unpacklo_epi64(
-#ifdef VPC
-                    _mm256_clmulepi64_epi128(
-                        aa,
-                        bb,
-                        0x00
-                    )
-#else
                     _mm_clmulepi64_si128(
                         _mm256_extractf128_si256(aa, 0),
                         _mm256_extractf128_si256(bb, 0),
@@ -115,10 +117,9 @@ namespace ff_util
                         _mm256_extractf128_si256(bb, 0),
                         0x11
                     )
-#endif
                 )
             );
-
+#endif
             hi = _mm256_or_si256(
                 _mm256_slli_epi64(hi, 16),
                 _mm256_srli_epi64(prod, 16)
