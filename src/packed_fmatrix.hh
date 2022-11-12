@@ -110,8 +110,8 @@ public:
     {
         this->nmod = matrix.get_n() % VECTOR_N;
         this->rows = matrix.get_n();
-        if (this->rows % VECTOR_N)
-            this->rows += VECTOR_N - (matrix.get_n() % VECTOR_N);
+        if (this->nmod)
+            this->rows += VECTOR_N - this->nmod;
         this->cols = this->rows / VECTOR_N;
 
         this->m.resize(this->rows * this->cols);
