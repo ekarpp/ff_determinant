@@ -10,7 +10,7 @@
 #include "gf.hh"
 #include "fmatrix.hh"
 
-typedef long long int long4_t __attribute__ ((vector_size (32)));
+typedef long long long4_t __attribute__ ((vector_size (32)));
 
 #ifndef PAR
 #define PAR 0
@@ -28,7 +28,30 @@ typedef long long int long4_t __attribute__ ((vector_size (32)));
             );                                          \
         else                                            \
             onepos = _mm256_srli_epi32(onepos, 16);     \
-}
+    }
+
+
+#define ELIM_LOOP(index)                                            \
+        for (int row = r0 + 1; row < this->rows; row++)             \
+        {                                                           \
+            long4_t val = _mm256_permutevar8x32_epi32(              \
+                this->get(row, col),                                \
+                idx                                                 \
+            );                                                      \
+            if (index % 2)                                          \
+                val = _mm256_blend_epi16(                           \
+                    val,                                            \
+                    _mm256_slli_epi32(val, 16),                     \
+                    0xAA                                            \
+                );                                                  \
+            else                                                    \
+                val = _mm256_blend_epi16(                           \
+                    _mm256_srli_epi32(val, 16),                     \
+                    val,                                            \
+                    0xAA                                            \
+                );                                                  \
+            this->row_op(r0, row, val);                             \
+        }
 
 
 #define VECTOR_N 16
@@ -39,14 +62,14 @@ typedef long long int long4_t __attribute__ ((vector_size (32)));
         long4_t mx;                                             \
         int mxi = -1;                                           \
         long4_t cmpmsk = _mm256_set_epi64x(                     \
-            0xFFFFull << 32,                                    \
+            global::F.get_mask() << 48,                         \
             0,                                                  \
             0,                                                  \
             0                                                   \
         );                                                      \
-        if (index >= 4)                                         \
+        if (index >= (VECTOR_N / 2))                            \
             cmpmsk = _mm256_permute4x64_epi64(cmpmsk, 0x0C);    \
-        cmpmsk = _mm256_srli_si256(cmpmsk, 4*(index%4));        \
+        cmpmsk = _mm256_srli_si256(cmpmsk, 2 * (index % 8));    \
         for (int row = r0; row < this->rows; row++)             \
         {                                                       \
             char ZF = _mm256_testz_si256(                       \
@@ -63,7 +86,7 @@ typedef long long int long4_t __attribute__ ((vector_size (32)));
         if (mxi == -1)                                          \
             return global::F.zero();                            \
         uint64_t mx_ext =                                       \
-            _mm256_extract_epi32(mx, VECTOR_N - 1 - index);     \
+            _mm256_extract_epi16(mx, VECTOR_N - 1 - index);     \
         if (mxi != r0)                                          \
             this->swap_rows(mxi, r0);                           \
         /* vectorize? */                                        \
@@ -72,28 +95,14 @@ typedef long long int long4_t __attribute__ ((vector_size (32)));
         );                                                      \
         mx_ext = ff_util::ext_euclid(mx_ext);                   \
         this->mul_row(r0, mx_ext);                              \
-        /* vectorize end? */                                    \
-        char mask = VECTOR_N - 1 - index;                       \
+        char mask = (VECTOR_N - 1 - index) / 2;                 \
         long4_t idx = _mm256_set1_epi32(mask);                  \
+        /* vectorize end? */                                    \
         if (PAR) {                                              \
             _Pragma("omp parallel for")                         \
-            for (int row = r0 + 1; row < this->rows; row++)     \
-            {                                                   \
-                long4_t val = _mm256_permutevar8x32_epi32(      \
-                    this->get(row, col),                        \
-                    idx                                         \
-                );                                              \
-                this->row_op(r0, row, val);                     \
-            }                                                   \
+            ELIM_LOOP(index);                                   \
         } else {                                                \
-            for (int row = r0 + 1; row < this->rows; row++)     \
-            {                                                   \
-                long4_t val = _mm256_permutevar8x32_epi32(      \
-                    this->get(row, col),                        \
-                    idx                                         \
-                );                                              \
-                this->row_op(r0, row, val);                     \
-            }                                                   \
+            ELIM_LOOP(index);                                   \
         }                                                       \
     }
 
