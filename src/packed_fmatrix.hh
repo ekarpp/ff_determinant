@@ -186,7 +186,7 @@ public:
             0b001
         );
 
-        long4_t onepos = _mm256_set_epi64x(1ull << 32, 0, 0, 0);
+        long4_t onepos = _mm256_set_epi64x(1ull << 48, 0, 0, 0);
         for (int i = 0; i < this->nmod; i++)
             MOVE_ID_VEC(i);
 
@@ -212,7 +212,7 @@ public:
 
     void mul_row(int row, uint64_t v)
     {
-        long4_t pack = _mm256_set1_epi32(v);
+        long4_t pack = _mm256_set1_epi16(v);
         for (int col = 0; col < this->cols; col++)
             this->set(row, col,
                       ff_util::wide_mul(this->get(row, col), pack)
