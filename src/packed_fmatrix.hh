@@ -16,7 +16,22 @@ typedef long long int long4_t __attribute__ ((vector_size (32)));
 #define PAR 0
 #endif
 
-#define VECTOR_N 8
+#define MOVE_ID_VEC(index)                              \
+    {                                                   \
+        if (index%2)                                    \
+            onepos = _mm256_slli_epi32(                 \
+                _mm256_permutevar8x32_epi32(            \
+                    onepos,                             \
+                    permute_idx                         \
+                ),                                      \
+                16                                      \
+            );                                          \
+        else                                            \
+            onepos = _mm256_srli_epi32(onepos, 16);     \
+}
+
+
+#define VECTOR_N 16
 
 #define DET_LOOP(index)                                         \
     {                                                           \
@@ -120,15 +135,23 @@ public:
         {
             for (int c = 0; c < matrix.get_n() / VECTOR_N; c++)
                 this->set(r, c,
-                          _mm256_set_epi32(
-                              matrix(r, VECTOR_N*c + 0).get_repr(),
-                              matrix(r, VECTOR_N*c + 1).get_repr(),
-                              matrix(r, VECTOR_N*c + 2).get_repr(),
-                              matrix(r, VECTOR_N*c + 3).get_repr(),
-                              matrix(r, VECTOR_N*c + 4).get_repr(),
-                              matrix(r, VECTOR_N*c + 5).get_repr(),
-                              matrix(r, VECTOR_N*c + 6).get_repr(),
-                              matrix(r, VECTOR_N*c + 7).get_repr()
+                          _mm256_set_epi16(
+                              matrix(r, VECTOR_N*c +  0).get_repr(),
+                              matrix(r, VECTOR_N*c +  1).get_repr(),
+                              matrix(r, VECTOR_N*c +  2).get_repr(),
+                              matrix(r, VECTOR_N*c +  3).get_repr(),
+                              matrix(r, VECTOR_N*c +  4).get_repr(),
+                              matrix(r, VECTOR_N*c +  5).get_repr(),
+                              matrix(r, VECTOR_N*c +  6).get_repr(),
+                              matrix(r, VECTOR_N*c +  7).get_repr(),
+                              matrix(r, VECTOR_N*c +  8).get_repr(),
+                              matrix(r, VECTOR_N*c +  9).get_repr(),
+                              matrix(r, VECTOR_N*c + 10).get_repr(),
+                              matrix(r, VECTOR_N*c + 11).get_repr(),
+                              matrix(r, VECTOR_N*c + 12).get_repr(),
+                              matrix(r, VECTOR_N*c + 13).get_repr(),
+                              matrix(r, VECTOR_N*c + 14).get_repr(),
+                              matrix(r, VECTOR_N*c + 15).get_repr()
                           )
                     );
             if (this->nmod)
@@ -141,11 +164,11 @@ public:
                     elems[i] = matrix(r, VECTOR_N*c + i).get_repr();
 
                 this->set(r, c,
-                          _mm256_set_epi32(
-                              elems[0], elems[1],
-                              elems[2], elems[3],
-                              elems[4], elems[5],
-                              elems[6], elems[7]
+                          _mm256_set_epi16(
+                              elems[0],  elems[1],  elems[2],  elems[3],
+                              elems[4],  elems[5],  elems[6],  elems[7],
+                              elems[8],  elems[9],  elems[10], elems[11],
+                              elems[12], elems[13], elems[14], elems[15]
                           )
                 );
             }
@@ -165,20 +188,14 @@ public:
 
         long4_t onepos = _mm256_set_epi64x(1ull << 32, 0, 0, 0);
         for (int i = 0; i < this->nmod; i++)
-            onepos = _mm256_permutevar8x32_epi32(
-                onepos,
-                permute_idx
-            );
+            MOVE_ID_VEC(i);
 
         for (int r = matrix.get_n(); r < this->rows; r++)
         {
             for (int c = 0; c < this->cols - 1; c++)
                 this->set(r, c, _mm256_setzero_si256());
             this->set(r, this->cols - 1, onepos);
-            onepos = _mm256_permutevar8x32_epi32(
-                onepos,
-                permute_idx
-            );
+            MOVE_ID_VEC(r % VECTOR_N);
         }
     }
 
