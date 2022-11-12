@@ -1,0 +1,11 @@
+# intermediate compilation items
+*.s
+*.asm1
+*.asm2
+*.o
+
+# data from "perf"
+perf.data*
+
+# binaries
+ff-det*
