@@ -74,6 +74,23 @@ namespace ff_util
                 _mm256_srli_epi64(b, 16*(3-i)),
                 mask
             );
+#ifdef VPC
+            const __m256i prod = _mm256_or_si256(
+                _mm256_clmulepi64_epi128(
+                    aa,
+                    bb,
+                    0x00
+                ),
+                _mm256_slli_si256(
+                    _mm256_clmulepi64_epi128(
+                        aa,
+                        bb,
+                        0x11
+                    ),
+                    64 / 8
+                )
+            );
+#else
             const __m256i prod = _mm256_set_m128i(
                 /* hi */
                 _mm_unpacklo_epi64(
@@ -102,7 +119,7 @@ namespace ff_util
                     )
                 )
             );
-
+#endif
             hi = _mm256_or_si256(
                 _mm256_slli_epi64(hi, 16),
                 _mm256_srli_epi64(prod, 16)

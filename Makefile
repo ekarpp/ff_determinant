@@ -6,17 +6,23 @@ LDFLAGS := -fopenmp
 
 VPATH = src:tests/unit
 
-BIN := ff-det ff-det-PAR ff-det-test
+BIN := ff-det ff-det-VPC ff-det-PAR ff-det-test ff-det-test-VPC
 
 all: $(BIN)
 
 ff-det: main.o
 	$(CXX) $^ -o $@ $(LDFLAGS)
 
+ff-det-VPC: mainVPC.o
+	$(CXX) $^ -o $@ $(LDFLAGS)
+
 ff-det-PAR: mainPAR.o
 	$(CXX) $^ -o $@ $(LDFLAGS)
 
 ff-det-test: gf_test.o fmatrix_test.o tests.o
+	$(CXX) $^ -o $@ $(LDFLAGS)
+
+ff-det-test-VPC: gf_testVPC.o fmatrix_testVPC.o tests.o
 	$(CXX) $^ -o $@ $(LDFLAGS)
 
 .PHONY: clean
@@ -50,3 +56,6 @@ test: ff-det-test
 
 %PAR.o: %.cc
 	$(CXX) $(CXXFLAGS) -D PAR=1 -c -o $@ $^
+
+%VPC.o: %.cc
+	$(CXX) $(CXXFLAGS) -D VPC=1 -c -o $@ $^
