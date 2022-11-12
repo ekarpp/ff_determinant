@@ -16,6 +16,8 @@ typedef long long long4_t __attribute__ ((vector_size (32)));
 #define PAR 0
 #endif
 
+#define VECTOR_N 16
+
 #define MOVE_ID_VEC(index)                              \
     {                                                   \
         if (index%2)                                    \
@@ -52,9 +54,6 @@ typedef long long long4_t __attribute__ ((vector_size (32)));
                 );                                                  \
             this->row_op(r0, row, val);                             \
         }
-
-
-#define VECTOR_N 16
 
 #define DET_LOOP(index)                                         \
     {                                                           \
