@@ -6,18 +6,23 @@ LDFLAGS := -fopenmp
 
 VPATH = src:tests/unit
 
-BIN := ff-det ff-det-VPC ff-det-PAR ff-det-test ff-det-test-VPC
+FILES := main.cc gf.hh fmatrix.hh packed_fmatrix.hh
+
+BIN := ff-det ff-det-VPC ff-det-VPC-PAR ff-det-PAR ff-det-test ff-det-test-VPC
 
 all: $(BIN)
 
-ff-det: main.o
-	$(CXX) $^ -o $@ $(LDFLAGS)
+ff-det: $(FILES)
+	$(CXX) src/main.cc $(CXXFLAGS) -o $@
 
-ff-det-VPC: mainVPC.o
-	$(CXX) $^ -o $@ $(LDFLAGS)
+ff-det-VPC: $(FILES)
+	$(CXX) src/main.cc $(CXXFLAGS) -D VPC=1 -o $@
 
-ff-det-PAR: mainPAR.o
-	$(CXX) $^ -o $@ $(LDFLAGS)
+ff-det-VPC-PAR: $(FILES)
+	$(CXX) src/main.cc $(CXXFLAGS) -D VPC=1 -D PAR=1 -o $@
+
+ff-det-PAR: $(FILES)
+	$(CXX) src/main.cc $(CXXFLAGS) -D PAR=1 -o $@
 
 ff-det-test: gf_test.o fmatrix_test.o tests.o
 	$(CXX) $^ -o $@ $(LDFLAGS)
@@ -38,7 +43,10 @@ test: ff-det-test
 #############
 
 %.s: %.cc
-	$(CXX) -D GF2_bits=16 -S $(CXXFLAGS) -fverbose-asm $^
+	$(CXX) -S $(CXXFLAGS) -fverbose-asm $^
+
+%VPC.s: %.cc
+	$(CXX) -S $(CXXFLAGS) -D VPC=1 -fverbose-asm $^ -o $@
 
 %.asm1: %.s
 	c++filt < $^ > $@
@@ -53,9 +61,6 @@ test: ff-det-test
 
 %.o: %.cc
 	$(CXX) $(CXXFLAGS) -c -o $@ $^
-
-%PAR.o: %.cc
-	$(CXX) $(CXXFLAGS) -D PAR=1 -c -o $@ $^
 
 %VPC.o: %.cc
 	$(CXX) $(CXXFLAGS) -D VPC=1 -c -o $@ $^
