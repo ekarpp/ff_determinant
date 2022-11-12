@@ -120,30 +120,32 @@ public:
         {
             for (int c = 0; c < matrix.get_n() / VECTOR_N; c++)
                 this->set(r, c,
-                          _mm256_set_epi64x(
-                              matrix(r, VECTOR_N*c + 0).get_repr() << 32
-                                  | matrix(r, VECTOR_N*c + 1).get_repr(),
-                              matrix(r, VECTOR_N*c + 2).get_repr() << 32
-                                  | matrix(r, VECTOR_N*c + 3).get_repr(),
-                              matrix(r, VECTOR_N*c + 4).get_repr() << 32
-                                  | matrix(r, VECTOR_N*c + 5).get_repr(),
-                              matrix(r, VECTOR_N*c + 6).get_repr() << 32
-                                  | matrix(r, VECTOR_N*c + 7).get_repr()
+                          _mm256_set_epi32(
+                              matrix(r, VECTOR_N*c + 0).get_repr(),
+                              matrix(r, VECTOR_N*c + 1).get_repr(),
+                              matrix(r, VECTOR_N*c + 2).get_repr(),
+                              matrix(r, VECTOR_N*c + 3).get_repr(),
+                              matrix(r, VECTOR_N*c + 4).get_repr(),
+                              matrix(r, VECTOR_N*c + 5).get_repr(),
+                              matrix(r, VECTOR_N*c + 6).get_repr(),
+                              matrix(r, VECTOR_N*c + 7).get_repr()
                           )
                     );
             if (this->nmod)
             {
                 int c = this->cols - 1;
-                uint64_t elems[4];
-                elems[0] = 0; elems[1] = 0; elems[2] = 0; elems[3] = 0;
+                uint64_t elems[VECTOR_N];
+                for (int i = 0; i < VECTOR_N; i++)
+                    elems[i] = 0;
                 for (int i = 0; i < this->nmod; i++)
-                    elems[i/2] |= matrix(r, VECTOR_N*c + i).get_repr() << (32*(1 - i%2));
+                    elems[i] = matrix(r, VECTOR_N*c + i).get_repr();
 
-                this->set(r, c, _mm256_set_epi64x(
-                              elems[0],
-                              elems[1],
-                              elems[2],
-                              elems[3]
+                this->set(r, c,
+                          _mm256_set_epi32(
+                              elems[0], elems[1],
+                              elems[2], elems[3],
+                              elems[4], elems[5],
+                              elems[6], elems[7]
                           )
                 );
             }
@@ -218,14 +220,9 @@ public:
         uint64_t det = 0x1;
         for (int col = 0; col < this->cols; col++)
         {
-            DET_LOOP(0);
-            DET_LOOP(1);
-            DET_LOOP(2);
-            DET_LOOP(3);
-            DET_LOOP(4);
-            DET_LOOP(5);
-            DET_LOOP(6);
-            DET_LOOP(7);
+            #pragma GCC unroll 32
+            for (int loop = 0; loop < VECTOR_N; loop++)
+                DET_LOOP(loop);
         }
         return GF_element(det);
     }
