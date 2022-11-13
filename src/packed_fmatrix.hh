@@ -60,13 +60,14 @@ typedef long long avx_t __attribute__ ((vector_size (32)));
         }                                                       \
         if (mxi == -1)                                          \
             return global::F.zero();                            \
-        uint64_t mx_ext = _mm256_extract_epi16(                 \
-            _mm512_extracti64x4_epi64(                          \
+        const char mask = (VECTOR_N - 1 - index) / 2;           \
+        const avx_t idx = _mm512_set1_epi16(mask);              \
+        uint64_t mx_ext = _mm512_cvtsi512_si32(                 \
+            _mm512_permutexvar_epi16(                           \
                 mx,                                             \
-                index / 2                                       \
-             ),                                                 \
-            index % 8                                           \
-        );                                                      \
+                idx                                             \
+            )                                                   \
+        ) & ff_util::gf_mask;                                   \
         if (mxi != r0)                                          \
             this->swap_rows(mxi, r0);                           \
         /* vectorize? */                                        \
@@ -75,8 +76,6 @@ typedef long long avx_t __attribute__ ((vector_size (32)));
         );                                                      \
         mx_ext = ff_util::ext_euclid(mx_ext);                   \
         this->mul_row(r0, mx_ext);                              \
-        char mask = (VECTOR_N - 1 - index) / 2;                 \
-        avx_t idx = _mm512_set1_epi16(mask);                    \
         /* vectorize end? */                                    \
         if (PAR) {                                              \
             _Pragma("omp parallel for")                         \
