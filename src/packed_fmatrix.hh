@@ -377,10 +377,12 @@ public:
             DET_LOOP(4);  DET_LOOP(5);  DET_LOOP(6);  DET_LOOP(7);
             DET_LOOP(8);  DET_LOOP(9);  DET_LOOP(10); DET_LOOP(11);
             DET_LOOP(12); DET_LOOP(13); DET_LOOP(14); DET_LOOP(15);
+#ifdef AVX512
             DET_LOOP(16); DET_LOOP(17); DET_LOOP(18); DET_LOOP(19);
             DET_LOOP(20); DET_LOOP(21); DET_LOOP(22); DET_LOOP(23);
             DET_LOOP(24); DET_LOOP(25); DET_LOOP(26); DET_LOOP(27);
             DET_LOOP(28); DET_LOOP(29); DET_LOOP(30); DET_LOOP(31);
+#endif
         }
         return GF_element(det);
     }
