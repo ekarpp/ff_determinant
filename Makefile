@@ -8,7 +8,7 @@ VPATH = src:tests/unit
 
 FILES := main.cc gf.hh fmatrix.hh packed_fmatrix.hh
 
-BIN := ff-det ff-det-VPC ff-det-VPC-PAR ff-det-PAR ff-det-test ff-det-test-VPC
+BIN := ff-det ff-det-PAR ff-det-VPC ff-det-VPC-PAR ff-det-512 ff-det-512-PAR ff-det-test ff-det-test-VPC ff-det-test-512
 
 all: $(BIN)
 
@@ -20,6 +20,12 @@ ff-det-VPC: $(FILES)
 
 ff-det-VPC-PAR: $(FILES)
 	$(CXX) src/main.cc $(CXXFLAGS) -D VPC=1 -D PAR=1 -o $@
+
+ff-det-512: $(FILES)
+	$(CXX) src/main.cc $(CXXFLAGS) -D AVX512=1 -o $@
+
+ff-det-512-PAR: $(FILES)
+	$(CXX) src/main.cc $(CXXFLAGS) -D AVX512=1 -D PAR=1 -o $@
 
 ff-det-PAR: $(FILES)
 	$(CXX) src/main.cc $(CXXFLAGS) -D PAR=1 -o $@
