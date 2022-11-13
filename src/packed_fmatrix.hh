@@ -51,7 +51,7 @@ typedef long long avx_t __attribute__ ((vector_size (32)));
                 this->get(row,col),                             \
                 one                                             \
             );                                                  \
-            if ((mask >> (VECTOR_N - 1 - index)) & 1 == 1)      \
+            if (((mask >> (VECTOR_N - 1 - index)) & 1) == 1)    \
             {                                                   \
                 mx = this->get(row,col);                        \
                 mxi = row;                                      \
@@ -374,7 +374,7 @@ public:
         uint64_t det = 0x1;
         for (int col = 0; col < this->cols; col++)
         {
-            #pragma GCC unroll 32
+            #pragma GCC unroll 64
             for (int loop = 0; loop < VECTOR_N; loop++)
                 DET_LOOP(loop);
         }
