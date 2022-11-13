@@ -49,7 +49,7 @@ namespace ff_util
     }
 
 #ifdef AVX512
-    inline __m512i wide_mul(__m512i a, __m512 b)
+    inline __m512i wide_mul(__m512i a, __m512i b)
     {
         const __m512i mask = _mm512_set1_epi64(ff_util::gf_mask);
         /* 16 hi bits of each multiplication */
@@ -80,7 +80,7 @@ namespace ff_util
                         bb,
                         0x11
                     ),
-                    0x4E
+                    _MM_PERM_BADC
                 )
             );
             hi = _mm512_or_si512(

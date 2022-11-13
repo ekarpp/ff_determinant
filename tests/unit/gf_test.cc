@@ -155,10 +155,10 @@ void GF_test::test_wide_mul()
         );
         __m512i pp = ff_util::wide_mul(aa, bb);
 
-        #pragama GCC unroll 32
+        #pragma GCC unroll 32
         for (int i = 0; i < WIDTH; i++)
         {
-            const __m128i tmp = _mm512_extract64x2_epi128(
+            const __m128i tmp = _mm512_extracti64x2_epi128(
                 pp,
                 i / 2
             );
