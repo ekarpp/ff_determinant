@@ -157,8 +157,14 @@ void GF_test::test_wide_mul()
 
         #pragama GCC unroll 32
         for (int i = 0; i < WIDTH; i++)
-            if (prod[i] != _mm512_extract_epi64(pp, i))
+        {
+            const __m128i tmp = _mm512_extract64x2_epi128(
+                pp,
+                i / 2
+            );
+            if (prod[i] != _mm_extract_epi64(tmp, i % 2))
                 err++;
+        }
 #else
         __m256i aa = _mm256_set_epi64x(a[3], a[2], a[1], a[0]);
         __m256i bb = _mm256_set_epi64x(b[3], b[2], b[1], b[0]);
