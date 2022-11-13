@@ -116,7 +116,11 @@ void GF_test::test_packed_rem()
 
 void GF_test::test_wide_mul()
 {
+#ifdef AVX512
+#define WIDTH 8
+#else
 #define WIDTH 4
+#endif
     cout << "wide mul: ";
     int err = 0;
     for (int i = 0; i < this->tests / WIDTH; i++)
@@ -140,7 +144,22 @@ void GF_test::test_wide_mul()
                 ) << (16*k);
             }
         }
+#ifdef AVX512
+        __m512i aa = _mm512_set_epi64(
+            a[7], a[6], a[5], a[4],
+            a[3], a[2], a[1], a[0]
+         );
+        __m512i bb = _mm512_set_epi64(
+            b[7], b[6], b[5], b[4],
+            b[3], b[2], b[1], b[0]
+        );
+        __m512i pp = ff_util::wide_mul(aa, bb);
 
+        #pragama GCC unroll 32
+        for (int i = 0; i < WIDTH; i++)
+            if (prod[i] != _mm512_extract_epi64(pp, i))
+                err++;
+#else
         __m256i aa = _mm256_set_epi64x(a[3], a[2], a[1], a[0]);
         __m256i bb = _mm256_set_epi64x(b[3], b[2], b[1], b[0]);
         __m256i pp = ff_util::wide_mul(aa, bb);
@@ -156,6 +175,7 @@ void GF_test::test_wide_mul()
 
         if (prod[3] != _mm256_extract_epi64(pp, 3))
             err++;
+#endif
     }
     this->end_test(err);
 }
