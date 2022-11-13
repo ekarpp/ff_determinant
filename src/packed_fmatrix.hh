@@ -60,12 +60,12 @@ typedef long long avx_t __attribute__ ((vector_size (32)));
         }                                                       \
         if (mxi == -1)                                          \
             return global::F.zero();                            \
-        uint64_t mx_ext = _mm_extract_epi16(                    \
-            _mm512_extracti64x2_epi64(                          \
+        uint64_t mx_ext = _mm256_extract_epi16(                 \
+            _mm512_extracti64x4_epi64(                          \
                 mx,                                             \
-                index / 4                                       \
+                index / 2                                       \
              ),                                                 \
-            index % 4                                           \
+            index % 8                                           \
         );                                                      \
         if (mxi != r0)                                          \
             this->swap_rows(mxi, r0);                           \
