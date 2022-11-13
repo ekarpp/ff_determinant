@@ -38,7 +38,66 @@ typedef long long avx_t __attribute__ ((vector_size (32)));
             onepos = _mm256_srli_epi32(onepos, 16);     \
     }
 
-
+#ifdef AVX512
+#define DET_LOOP(index)                                         \
+    {                                                           \
+        int r0 = VECTOR_N*col + index;                          \
+        avx_t mx;                                             \
+        int mxi = -1;                                           \
+        const avx_t one = _mm512_set1_epi8(0xFF);               \
+        for (int row = r0; row < this->rows; row++)             \
+        {                                                       \
+            const uint32_t mask = _mm512_test_epi16_mask(       \
+                this->get(row,col),                             \
+                one                                             \
+            );                                                  \
+            if ((mask >> (VECTOR_N - 1 - index)) & 1 == 1)      \
+            {                                                   \
+                mx = this->get(row,col);                        \
+                mxi = row;                                      \
+                break;                                          \
+            }                                                   \
+        }                                                       \
+        if (mxi == -1)                                          \
+            return global::F.zero();                            \
+        uint64_t mx_ext = _mm_extract_epi16(                    \
+            _mm512_extracti64x2_epi64(                          \
+                mx,                                             \
+                index / 4                                       \
+             ),                                                 \
+            index % 4                                           \
+        );                                                      \
+        if (mxi != r0)                                          \
+            this->swap_rows(mxi, r0);                           \
+        /* vectorize? */                                        \
+        det = ff_util::rem(                                     \
+            ff_util::clmul(det, mx_ext)                         \
+        );                                                      \
+        mx_ext = ff_util::ext_euclid(mx_ext);                   \
+        this->mul_row(r0, mx_ext);                              \
+        char mask = (VECTOR_N - 1 - index) / 2;                 \
+        avx_t idx = _mm512_set1_epi16(mask);                    \
+        /* vectorize end? */                                    \
+        if (PAR) {                                              \
+            _Pragma("omp parallel for")                         \
+            for (int row = r0 + 1; row < this->rows; row++)     \
+                this->row_op(r0, row,                           \
+                             _mm512_permutexvar_epi16(          \
+                                 this->get(row, col),           \
+                                 idx                            \
+                             )                                  \
+                );                                              \
+        } else {                                                \
+            for (int row = r0 + 1; row < this->rows; row++)     \
+                this->row_op(r0, row,                           \
+                             _mm512_permutexvar_epi16(          \
+                                 this->get(row, col),           \
+                                 idx                            \
+                             )                                  \
+                );                                              \
+        }                                                       \
+    }
+#else
 #define ELIM_LOOP(index)                                            \
         for (int row = r0 + 1; row < this->rows; row++)             \
         {                                                           \
@@ -110,6 +169,7 @@ typedef long long avx_t __attribute__ ((vector_size (32)));
             ELIM_LOOP(index);                                   \
         }                                                       \
     }
+#endif
 
 class Packed_FMatrix
 {
@@ -312,8 +372,6 @@ public:
     GF_element det()
     {
         uint64_t det = 0x1;
-        return GF_element(det);
-/*
         for (int col = 0; col < this->cols; col++)
         {
             #pragma GCC unroll 32
@@ -321,7 +379,6 @@ public:
                 DET_LOOP(loop);
         }
         return GF_element(det);
-*/
     }
 };
 
