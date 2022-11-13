@@ -123,6 +123,7 @@ namespace ff_util
         /* al/bl might not be needed, just use a/b */
         const __m256i mask = _mm256_set1_epi32(ff_util::gf_mask);
 
+
         /* 16 hi bits of each multiplication */
         __m256i hi = _mm256_setzero_si256();
         /* 16 lo bits of each multiplication */
