@@ -93,7 +93,7 @@ namespace ff_util
             );
         }
 
-        const __m256i tmp = _mm512_xor_si512(
+        const __m512i tmp = _mm512_xor_si512(
             hi,
             _mm512_xor_si512(
                 _mm512_srli_epi16(hi, 14),
@@ -104,7 +104,7 @@ namespace ff_util
             )
         );
 
-        const __m256i rem = _mm512_xor_si512(
+        const __m512i rem = _mm512_xor_si512(
             tmp,
             _mm512_xor_si512(
                 _mm512_slli_epi16(tmp, 2),
