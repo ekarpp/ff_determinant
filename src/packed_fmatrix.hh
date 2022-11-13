@@ -313,6 +313,7 @@ public:
     {
         uint64_t det = 0x1;
         return GF_element(det);
+/*
         for (int col = 0; col < this->cols; col++)
         {
             #pragma GCC unroll 32
@@ -320,6 +321,7 @@ public:
                 DET_LOOP(loop);
         }
         return GF_element(det);
+*/
     }
 };
 
