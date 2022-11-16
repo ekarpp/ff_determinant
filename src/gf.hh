@@ -52,26 +52,21 @@ namespace ff_util
     inline __m256i wide_mul(__m256i a, __m256i b)
     {
         /* al/bl might not be needed, just use a/b */
-        const __m256i mask = _mm256_set_epi64x(
-            ff_util::gf_mask,
-            ff_util::gf_mask,
-            ff_util::gf_mask,
-            ff_util::gf_mask
-        );
+        const __m256i mask = _mm256_set1_epi32(ff_util::gf_mask);
 
         /* 16 hi bits of each multiplication */
         __m256i hi = _mm256_setzero_si256();
         /* 16 lo bits of each multiplication */
         __m256i lo = _mm256_setzero_si256();
         #pragma GCC unroll 32
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 2; i++)
         {
             const __m256i aa = _mm256_and_si256(
-                _mm256_srli_epi64(a, 16*(3-i)),
+                _mm256_srli_epi64(a, 16*(1-i)),
                 mask
             );
             const __m256i bb = _mm256_and_si256(
-                _mm256_srli_epi64(b, 16*(3-i)),
+                _mm256_srli_epi64(b, 16*(1-i)),
                 mask
             );
 #ifdef VPC
@@ -93,36 +88,50 @@ namespace ff_util
 #else
             const __m256i prod = _mm256_set_m128i(
                 /* hi */
-                _mm_unpacklo_epi64(
-                    _mm_clmulepi64_si128(
-                        _mm256_extractf128_si256(aa, 1),
-                        _mm256_extractf128_si256(bb, 1),
-                        0x00
+                _mm_blend_epi32(
+                    _mm_shuffle_epi32(
+                        _mm_clmulepi64_si128(
+                            _mm256_extractf128_si256(aa, 1),
+                            _mm256_extractf128_si256(bb, 1),
+                            0x11
+                        ),
+                        0x8D
                     ),
-                    _mm_clmulepi64_si128(
-                        _mm256_extractf128_si256(aa, 1),
-                        _mm256_extractf128_si256(bb, 1),
-                        0x11
-                    )
+                    _mm_shuffle_epi32(
+                        _mm_clmulepi64_si128(
+                            _mm256_extractf128_si256(aa, 1),
+                            _mm256_extractf128_si256(bb, 1),
+                            0x00
+                        ),
+                        0xD8
+                    ),
+                    0x3
                 ),
                 /* lo */
-                _mm_unpacklo_epi64(
-                    _mm_clmulepi64_si128(
-                        _mm256_extractf128_si256(aa, 0),
-                        _mm256_extractf128_si256(bb, 0),
-                        0x00
+                _mm_blend_epi32(
+                    _mm_shuffle_epi32(
+                        _mm_clmulepi64_si128(
+                            _mm256_extractf128_si256(aa, 0),
+                            _mm256_extractf128_si256(bb, 0),
+                            0x11
+                        ),
+                        0x8D
                     ),
-                    _mm_clmulepi64_si128(
-                        _mm256_extractf128_si256(aa, 0),
-                        _mm256_extractf128_si256(bb, 0),
-                        0x11
-                    )
+                    _mm_shuffle_epi32(
+                        _mm_clmulepi64_si128(
+                            _mm256_extractf128_si256(aa, 0),
+                            _mm256_extractf128_si256(bb, 0),
+                            0x00
+                        ),
+                        0xD8
+                    ),
+                    0x3
                 )
             );
 #endif
             hi = _mm256_or_si256(
                 _mm256_slli_epi64(hi, 16),
-                _mm256_srli_epi64(prod, 16)
+                _mm256_srli_epi32(prod, 16)
             );
             lo = _mm256_or_si256(
                 _mm256_slli_epi64(lo, 16),
