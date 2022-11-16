@@ -70,20 +70,24 @@ namespace ff_util
                 mask
             );
 #ifdef VPC
-            const __m256i prod = _mm256_or_si256(
-                _mm256_clmulepi64_epi128(
-                    aa,
-                    bb,
-                    0x00
-                ),
-                _mm256_slli_si256(
+            const __m256i prod = _mm256_blend_epi32(
+                _mm256_shuffle_epi32(
                     _mm256_clmulepi64_epi128(
                         aa,
                         bb,
                         0x11
                     ),
-                    64 / 8
-                )
+                    0x8D
+                ),
+                _mm256_shuffle_epi32(
+                    _mm256_clmulepi64_epi128(
+                        aa,
+                        bb,
+                        0x00
+                    ),
+                    0xD8
+                ),
+                0x33
             );
 #else
             const __m256i prod = _mm256_set_m128i(
