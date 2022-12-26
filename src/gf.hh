@@ -48,7 +48,76 @@ namespace ff_util
         return r ^ lo;
     }
 
+#ifdef AVX512
+    inline __m512i wide_mul(__m512i a, __m512i b)
+    {
+        const __m512i mask = _mm512_set1_epi64(ff_util::gf_mask);
+        /* 16 hi bits of each multiplication */
+        __m512i hi = _mm512_setzero_si512();
+        /* 16 lo bits of each multiplication */
+        __m512i lo = _mm512_setzero_si512();
+        #pragma GCC unroll 32
+        for (int i = 0; i < 4; i++)
+        {
+            const __m512i aa = _mm512_and_si512(
+                _mm512_srli_epi64(a, 16*(3-i)),
+                mask
+            );
+            const __m512i bb = _mm512_and_si512(
+                _mm512_srli_epi64(b, 16*(3-i)),
+                mask
+            );
 
+            const __m512i prod = _mm512_or_si512(
+                _mm512_clmulepi64_epi128(
+                    aa,
+                    bb,
+                    0x00
+                ),
+                _mm512_shuffle_epi32(
+                    _mm512_clmulepi64_epi128(
+                        aa,
+                        bb,
+                        0x11
+                    ),
+                    _MM_PERM_BADC
+                )
+            );
+            hi = _mm512_or_si512(
+                _mm512_slli_epi64(hi, 16),
+                _mm512_srli_epi64(prod, 16)
+            );
+            lo = _mm512_or_si512(
+                _mm512_slli_epi64(lo, 16),
+                _mm512_and_si512(prod, mask)
+            );
+        }
+
+        const __m512i tmp = _mm512_xor_si512(
+            hi,
+            _mm512_xor_si512(
+                _mm512_srli_epi16(hi, 14),
+                _mm512_xor_si512(
+                    _mm512_srli_epi16(hi, 13),
+                    _mm512_srli_epi16(hi, 11)
+                )
+            )
+        );
+
+        const __m512i rem = _mm512_xor_si512(
+            tmp,
+            _mm512_xor_si512(
+                _mm512_slli_epi16(tmp, 2),
+                _mm512_xor_si512(
+                    _mm512_slli_epi16(tmp, 3),
+                    _mm512_slli_epi16(tmp, 5)
+                )
+            )
+        );
+
+        return _mm512_xor_si512(rem, lo);
+    }
+#else
     inline __m256i wide_mul(__m256i a, __m256i b)
     {
         /* al/bl might not be needed, just use a/b */
@@ -167,6 +236,7 @@ namespace ff_util
 
         return _mm256_xor_si256(rem, lo);
     }
+#endif
 
     inline uint64_t packed_rem(uint64_t a)
     {
